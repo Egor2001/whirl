@@ -18,13 +18,13 @@ enum class WHAllocType
     NONE = 0, CPU = 1, GPU = 2, HOST = 3 
 };
 //TODO: create shared_ptr
-class WHMemoryManager abstract
+class WHBaseMemoryManager abstract
 {
 public:
-    WHMemoryManager() = delete;
-    WHMemoryManager(WHAllocType alloc_type_set): alloc_type_(alloc_type_set) {}
+    WHBaseMemoryManager() = delete;
+    WHBaseMemoryManager(WHAllocType alloc_type_set): alloc_type_(alloc_type_set) {}
 
-    virtual ~WHMemoryManager() { alloc_type_ = WHAllocType::NONE; }
+    virtual ~WHBaseMemoryManager() { alloc_type_ = WHAllocType::NONE; }
 
     virtual void* allocate  (size_t size) const = 0;
     virtual void  deallocate(void* ptr)   const = 0;
@@ -38,11 +38,61 @@ private:
     WHAllocType alloc_type_;
 };
 
-class WHCpuMemManager : public WHMemoryManager
+template<class MemoryManager_>
+class WHSingletonMemoryManager abstract : public WHBaseMemoryManager
 {
+protected:
+    WHSingletonMemoryManager(WHAllocType alloc_type_set): WHBaseMemoryManager(alloc_type_set) {}
+
+private:
+    WHSingletonMemoryManager() = delete;
+    
+    WHSingletonMemoryManager             (const WHSingletonMemoryManager&) = delete;
+    WHSingletonMemoryManager& operator = (const WHSingletonMemoryManager&) = delete;
+
+    WHSingletonMemoryManager             (WHSingletonMemoryManager&&) = delete;
+    WHSingletonMemoryManager& operator = (WHSingletonMemoryManager&&) = delete;
+
 public:
-    WHCpuMemManager(): WHMemoryManager(WHAllocType::CPU) {}
-    virtual ~WHCpuMemManager() = default;
+    virtual ~WHSingletonMemoryManager() = default;
+/*    
+    virtual void* allocate  (size_t size) const = 0;
+    virtual void  deallocate(void* ptr)   const = 0;
+    
+    virtual void memory_set (void* dst, int value, size_t size) const = 0;
+    virtual void memory_copy(void* dst, const void* src, WHAllocType src_alloc_type, size_t size) const = 0;
+*/
+    static std::shared_ptr<WHBaseMemoryManager> instance()
+    {
+        if (!instance_) instance_ = std::shared_ptr<WHBaseMemoryManager>(new MemoryManager_);
+
+        return instance_;
+    }
+
+private:
+    static std::shared_ptr<WHBaseMemoryManager> instance_;
+};
+
+template<class MemoryManager_>
+std::shared_ptr<WHBaseMemoryManager> WHSingletonMemoryManager<MemoryManager_>::instance_;
+
+template<WHAllocType>
+class WHMemoryManager : public WHBaseMemoryManager
+{
+private:
+    WHMemoryManager() = delete;
+};
+
+template<>
+class WHMemoryManager<WHAllocType::CPU> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::CPU>>
+{
+private:
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
+
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::CPU) {}
+
+public:
+    virtual ~WHMemoryManager() = default;
 
     virtual void* allocate(size_t size) const override
     {
@@ -74,11 +124,16 @@ public:
     }
 };
 
-class WHGpuMemManager : public WHMemoryManager
+template<>
+class WHMemoryManager<WHAllocType::GPU> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::GPU>>
 {
+private:
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
+
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::GPU) {}
+
 public:
-    WHGpuMemManager(): WHMemoryManager(WHAllocType::GPU) {}
-    virtual ~WHGpuMemManager() = default;
+    virtual ~WHMemoryManager() = default;
 
     virtual void* allocate(size_t size) const override
     {
@@ -114,11 +169,16 @@ public:
     }
 };
 //TODO create async memory manager
-class WHHostMemManager : public WHMemoryManager
+template<>
+class WHMemoryManager<WHAllocType::HOST> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::HOST>>
 {
+private:
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
+    
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::HOST) {}
+
 public:
-    WHHostMemManager(): WHMemoryManager(WHAllocType::GPU) {}
-    virtual ~WHHostMemManager() = default;
+    virtual ~WHMemoryManager() = default;
 
     virtual void* allocate(size_t size) const override
     {

@@ -12,12 +12,13 @@
 
 #include "Windows.h"
 
+#include "../logger/WHLogger.h"
 #include "WHBuffer.h"
 
 #define __WH_WAIT_FOR(cond) while (!cond) Sleep(0);
 
 class WHWindow;
-
+//TODO: create BITMAPINFO member, implement flushes via winAPI DIBits functions or mediator class
 class WHWindow
 {
 private:
@@ -33,8 +34,8 @@ public:
     HWND create (const SIZE& size_set);
     void destroy();
 
-    template<WHMemoryLocation MEMORY_LOCATION> int flush	 (const WHBuffer<MEMORY_LOCATION>* buffer);
-	template<WHMemoryLocation MEMORY_LOCATION> int flush_back(      WHBuffer<MEMORY_LOCATION>* buffer);
+    int flush(const WHBuffer<WHMemoryLocation::CPU>* buffer);
+	//template<WHMemoryLocation MemLocation> int flush_back(WHBuffer<MemLocation>* buffer) const;
         
     HWND get_handle  () const { return wnd_handle_; }
     SIZE get_wnd_size() const { return wnd_size_; }
@@ -42,8 +43,10 @@ public:
     void show() const { UpdateWindow(wnd_handle_); ShowWindow(wnd_handle_, SW_SHOW); }
     void hide() const { UpdateWindow(wnd_handle_); ShowWindow(wnd_handle_, SW_HIDE); }
 
-    template<WHMemoryLocation MEMORY_LOCATION>
-    WHBuffer<MEMORY_LOCATION> create_buffer() { return WHBuffer<MEMORY_LOCATION>(wnd_size_); }
+    WHBuffer<WHMemoryLocation::CPU> create_buffer() 
+    { 
+        return WHBuffer<WHMemoryLocation::CPU>({ static_cast<size_t>(wnd_size_.cx), static_cast<size_t>(wnd_size_.cy) }); 
+    }
 
 private:
     void thread_proc_();
@@ -62,9 +65,10 @@ private:
 
     std::mutex  mutex_;
 	std::thread msg_thread_;
-	HWND        wnd_handle_;
+    HWND        wnd_handle_;
 	SIZE        wnd_size_;
     HDC         mirror_dc_;
+    BITMAPINFO  bmp_info_;
 };
 
 class WHWindow::ref_counter
@@ -100,7 +104,7 @@ private:
 
 std::vector<WHWindow*> WHWindow::ref_counter::refs;
 
-const LPCTSTR WHWindow::WND_CLASS_NAME_ = "ELL_WINDOW_CLASS";
+const LPCTSTR WHWindow::WND_CLASS_NAME_ = "WH_WINDOW_CLASS";
 
 const WNDCLASSEX WHWindow::WND_CLASS_EX_ = { sizeof(WNDCLASSEX), (CS_OWNDC | CS_HREDRAW | CS_VREDRAW), &WHWindow::wnd_proc_, 
                                              0, 0, nullptr, nullptr, LoadCursor(nullptr, IDC_HAND), 
@@ -122,7 +126,8 @@ WHWindow::~WHWindow()
 HWND WHWindow::create(const SIZE& size_set)
 {
     wnd_size_ = size_set;
-    
+    bmp_info_ = {{ sizeof(BITMAPINFOHEADER), wnd_size_.cx, wnd_size_.cy, 1, 24, BI_RGB }, {}};
+
     WHWindow::ref_counter::add_ref(this);
     
     msg_thread_ = std::thread(&WHWindow::thread_proc_, this);
@@ -249,14 +254,14 @@ LRESULT WHWindow::msg_paint_proc_(HWND wnd, WPARAM wparam, LPARAM lparam)
 	return !EndPaint(wnd, &paintStruct);
 }
 
-template<WHMemoryLocation MEMORY_LOCATION>
-int WHWindow::flush(const WHBuffer<MEMORY_LOCATION>* buffer)
+int WHWindow::flush(const WHBuffer<WHMemoryLocation::CPU>* buffer)
 {
     int result = 0;
 
 	mutex_.lock();
 	{
-        result = buffer->set_bytes_to_dc(mirror_dc_);
+        result = SetDIBits(mirror_dc_, static_cast<HBITMAP>(GetCurrentObject(mirror_dc_, OBJ_BITMAP)), 
+                           0, bmp_info_.bmiHeader.biHeight, buffer->get_byte_buffer(), &bmp_info_, DIB_RGB_COLORS);
 	}
 	mutex_.unlock();
     
@@ -264,9 +269,9 @@ int WHWindow::flush(const WHBuffer<MEMORY_LOCATION>* buffer)
 
     return result;
 }
-
-template<WHMemoryLocation MEMORY_LOCATION>
-int WHWindow::flush_back(WHBuffer<MEMORY_LOCATION>* buffer)
+/*
+template<WHMemoryLocation MemLocation>
+int WHWindow::flush_back(WHBuffer<MemLocation>* buffer) const
 {
     int result = 0;
 
@@ -278,3 +283,4 @@ int WHWindow::flush_back(WHBuffer<MEMORY_LOCATION>* buffer)
 
     return result;
 }
+*/

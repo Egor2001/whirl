@@ -2,8 +2,8 @@
 
 #include "Windows.h"
 #include <memory>
-#include "thrust\memory.h"
-#include "thrust\device_allocator.h"
+
+#include <algorithm>
 
 #include "WHColor.h"
 #include "WHMemory.h"
@@ -25,7 +25,7 @@ public:
     friend class WHBuffer<WHMemoryLocation::CPU>;
     friend class WHBuffer<WHMemoryLocation::GPU>;
 
-    static std::shared_ptr<WHMemoryManager> create_mem_manager(const Size_& alloc_size);
+    static std::shared_ptr<WHBaseMemoryManager> create_mem_manager(const Size_& alloc_size);
     
     template<WHMemoryLocation MemLocation>
     friend void swap(WHBuffer<MemLocation>&, WHBuffer<MemLocation>&);
@@ -44,30 +44,30 @@ public:
     __inline__ __host__ __device__ bool   set_pixel(size_t x, size_t y, Color_ color_set);
     __inline__ __host__ __device__ Color_ get_pixel(size_t x, size_t y) const;
 
-    __inline__ __host__ __device__ const std::shared_ptr<WHMemoryManager>& get_mem_manager() const { return mem_manager_; }
-    __inline__ __host__ __device__ Size_                                   get_pixel_size () const { return { byte_size_.cx/3, byte_size_.cy }; }//could return pixel_size_set + 3 if pixel_size_set%4 == 3
-    __inline__ __host__ __device__ const Byte_*                            get_byte_buffer() const { return color_buf_; }
+    __inline__ __host__ __device__ const std::shared_ptr<WHBaseMemoryManager>& get_mem_manager() const { return mem_manager_; }
+    __inline__ __host__ __device__ Size_                                       get_pixel_size () const { return { byte_size_.cx/3, byte_size_.cy }; }//could return pixel_size_set + 3 if pixel_size_set%4 == 3
+    __inline__ __host__ __device__ const Byte_*                                get_byte_buffer() const { return color_buf_; }
     /*
     __host__ size_t set_bytes_to_dc  (HDC dc) const;
     __host__ size_t get_bytes_from_dc(HDC dc);
     */
 private:
-    std::shared_ptr<WHMemoryManager> mem_manager_;
+    std::shared_ptr<WHBaseMemoryManager> mem_manager_;
 
     Size_  byte_size_;
     Byte_* color_buf_;
 };
 
 template<>
-std::shared_ptr<WHMemoryManager> WHBuffer<WHMemoryLocation::CPU>::create_mem_manager(const Size_& alloc_size)
+std::shared_ptr<WHBaseMemoryManager> WHBuffer<WHMemoryLocation::CPU>::create_mem_manager(const Size_& alloc_size)
 {
-    return std::dynamic_pointer_cast<WHMemoryManager>(std::make_shared<WHCpuMemManager>());
+    return WHMemoryManager<WHAllocType::CPU>::instance();
 }
 
 template<>
-std::shared_ptr<WHMemoryManager> WHBuffer<WHMemoryLocation::GPU>::create_mem_manager(const Size_& alloc_size)
+std::shared_ptr<WHBaseMemoryManager> WHBuffer<WHMemoryLocation::GPU>::create_mem_manager(const Size_& alloc_size)
 {
-    return std::dynamic_pointer_cast<WHMemoryManager>(std::make_shared<WHGpuMemManager>());
+    return WHMemoryManager<WHAllocType::GPU>::instance();
 }
 
 template<WHMemoryLocation MemLocation_>

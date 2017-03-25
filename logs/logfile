@@ -1,6 +1,0 @@
-[2017-03-23 05:42:48.799] [WHGlobalLogger] [debug] --------------------------------------------------start WHGlobalLogger logging--------------------------------------------------
-[2017-03-23 05:42:48.800] [WHGlobalLogger] [trace] CUDA_CALL  [func WHGpuMemManager::allocate, file c:\users\егор\documents\visual studio 2015\projects\whirl\whirl\render\whmemorymanager.h, line 87, call cudaMalloc(&ptr, size)]  no error
-[2017-03-23 05:42:48.819] [WHGlobalLogger] [trace] CUDA_CALL  [func WHGpuMemManager::memory_set, file c:\users\егор\documents\visual studio 2015\projects\whirl\whirl\render\whmemorymanager.h, line 99, call cudaMemset(dst, value, size)]  no error
-[2017-03-23 05:42:48.825] [WHGlobalLogger] [trace] CUDA_CALL  [func WHGpuMemManager::deallocate, file c:\users\егор\documents\visual studio 2015\projects\whirl\whirl\render\whmemorymanager.h, line 94, call cudaFree(ptr)]  no error
-[2017-03-23 05:42:48.825] [WHGlobalLogger] [debug] ---------------------------------------------------end WHGlobalLogger logging---------------------------------------------------
-
