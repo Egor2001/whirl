@@ -1,5 +1,7 @@
 #pragma once
 
+#include "stdio.h"
+
 #include "cuda.h"
 #include "cuda_runtime.h"
 
@@ -10,6 +12,8 @@
 
 #define WHIRL_TRACE_ON
 #define WHIRL_DEBUG_ON
+
+namespace whirl {
 
 //TODO enable trace and debug in spdlog
 class WHGlobalLogger
@@ -71,28 +75,59 @@ private:
     std::shared_ptr<spdlog::logger> spdlog_logger_;
 };
 
+#define WHIRL_STRINGIZE(param) #param
+
 #if defined WHIRL_TRACE_ON
     #define WHIRL_TRACE(format, ...) \
-        (WHGlobalLogger::instance().trace(" [func " __FUNCTION__ ", file " __FILE__ ", line " _STRINGIZE(__LINE__) "] " format, __VA__ARGS__))
+        (WHGlobalLogger::instance().trace(" [func " __FUNCTION__ ", line " WHIRL_STRINGIZE(__LINE__) "] " format, __VA_ARGS__))
 #else
     #define WHIRL_TRACE(format, ...)
 #endif
 
 #if defined WHIRL_DEBUG_ON
     #define WHIRL_DEBUG(format, ...) \
-        (WHGlobalLogger::instance().debug(" [func " __FUNCTION__ ", file " __FILE__ ", line " _STRINGIZE(__LINE__) "] " format, __VA__ARGS__))
+        (WHGlobalLogger::instance().debug(" [func " __FUNCTION__ ", line " WHIRL_STRINGIZE(__LINE__) "] " format, __VA_ARGS__))
 #else
     #define WHIRL_DEBUG(format, ...)
 #endif
 
 #if defined WHIRL_TRACE_ON
     #define WHIRL_CUDA_CALL(cuda_call) \
-        (WHGlobalLogger::instance().trace_cuda_call(" [func " __FUNCTION__ ", file " __FILE__ \
-                                                    ", line " _STRINGIZE(__LINE__) ", call " _STRINGIZE(cuda_call) "] ", cuda_call))
+        (WHGlobalLogger::instance().trace_cuda_call(" [func " __FUNCTION__ ", line " WHIRL_STRINGIZE(__LINE__) \
+                                                                           ", call " WHIRL_STRINGIZE(cuda_call) "] ", cuda_call))
 #elif defined WHIRL_DEBUG_ON
     #define WHIRL_CUDA_CALL(cuda_call) \
-        (WHGlobalLogger::instance().debug_cuda_call(" [func " __FUNCTION__ ", file " __FILE__ \
-                                                    ", line " _STRINGIZE(__LINE__) ", call " _STRINGIZE(cuda_call) "] ", cuda_call))
+        (WHGlobalLogger::instance().debug_cuda_call(" [func " __FUNCTION__ ", line " WHIRL_STRINGIZE(__LINE__) \
+                                                                           ", call " WHIRL_STRINGIZE(cuda_call) "] ", cuda_call))
 #else
     #define WHIRL_CUDA_CALL(cuda_call) cuda_call
 #endif
+
+#if defined WHIRL_DEBUG_ON
+    #define WHIRL_CHECK_EQ(param, value) \
+        if (!(param == value)) WHIRL_DEBUG("CHECK_EQ failed on parameters [ " WHIRL_STRINGIZE(param) ", " WHIRL_STRINGIZE(value) " ]")
+    
+    #define WHIRL_CHECK_NOT_EQ(param, value) \
+        if (!(param != value)) WHIRL_DEBUG("CHECK_NOT_EQ failed on parameters [ " WHIRL_STRINGIZE(param) ", " WHIRL_STRINGIZE(value) " ]")
+    
+    #define WHIRL_CHECK_GT(param, value) \
+        if (!(param > value)) WHIRL_DEBUG("CHECK_GT failed on parameters [ " WHIRL_STRINGIZE(param) ", " WHIRL_STRINGIZE(value) " ]")
+    
+    #define WHIRL_CHECK_LT(param, value) \
+        if (!(param < value)) WHIRL_DEBUG("CHECK_LT failed on parameters [ " WHIRL_STRINGIZE(param) ", " WHIRL_STRINGIZE(value) " ]")
+    
+    #define WHIRL_CHECK_GTEQ(param, value) \
+        if (!(param >= value)) WHIRL_DEBUG("CHECK_GTEQ failed on parameters [ " WHIRL_STRINGIZE(param) ", " WHIRL_STRINGIZE(value) " ]")
+
+    #define WHIRL_CHECK_LTEQ(param, value) \
+        if (!(param <= value)) WHIRL_DEBUG("CHECK_LTEQ failed on parameters [ " WHIRL_STRINGIZE(param) ", " WHIRL_STRINGIZE(value) " ]")
+#else
+    #define WHIRL_CHECK_EQ(param, value)
+    #define WHIRL_CHECK_NOT_EQ(param, value)
+    #define WHIRL_CHECK_GT(param, value)
+    #define WHIRL_CHECK_LT(param, value)
+    #define WHIRL_CHECK_GTEQ(param, value)
+    #define WHIRL_CHECK_LTEQ(param, value)
+#endif
+
+}//namespace whirl

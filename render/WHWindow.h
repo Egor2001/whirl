@@ -13,7 +13,9 @@
 #include "Windows.h"
 
 #include "../logger/WHLogger.h"
-#include "WHBuffer.h"
+#include "WHAbstractBuffer.h"
+
+namespace whirl {
 
 #define __WH_WAIT_FOR(cond) while (!cond) Sleep(0);
 
@@ -34,7 +36,8 @@ public:
     HWND create (const SIZE& size_set);
     void destroy();
 
-    int flush(const WHBuffer<WHMemoryLocation::CPU>* buffer);
+    template<WHMemoryLocation mem_location>
+    int flush(const WHBuffer<mem_location>* buffer);
 	//template<WHMemoryLocation MemLocation> int flush_back(WHBuffer<MemLocation>* buffer) const;
         
     HWND get_handle  () const { return wnd_handle_; }
@@ -43,9 +46,10 @@ public:
     void show() const { UpdateWindow(wnd_handle_); ShowWindow(wnd_handle_, SW_SHOW); }
     void hide() const { UpdateWindow(wnd_handle_); ShowWindow(wnd_handle_, SW_HIDE); }
 
-    WHBuffer<WHMemoryLocation::CPU> create_buffer() 
+    template<WHMemoryLocation mem_location>
+    WHBuffer<mem_location> create_buffer() 
     { 
-        return WHBuffer<WHMemoryLocation::CPU>({ static_cast<size_t>(wnd_size_.cx), static_cast<size_t>(wnd_size_.cy) }); 
+        return WHBuffer<mem_location>({ static_cast<size_t>(wnd_size_.cx), static_cast<size_t>(wnd_size_.cy) }); 
     }
 
 private:
@@ -254,7 +258,8 @@ LRESULT WHWindow::msg_paint_proc_(HWND wnd, WPARAM wparam, LPARAM lparam)
 	return !EndPaint(wnd, &paintStruct);
 }
 
-int WHWindow::flush(const WHBuffer<WHMemoryLocation::CPU>* buffer)
+template<WHMemoryLocation mem_location>
+int WHWindow::flush(const WHBuffer<mem_location>* buffer)
 {
     int result = 0;
 
@@ -284,3 +289,5 @@ int WHWindow::flush_back(WHBuffer<MemLocation>* buffer) const
     return result;
 }
 */
+
+}//namespace whirl

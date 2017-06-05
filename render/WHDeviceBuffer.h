@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-#include "WHAbstractBuffer.h"
+#include "WHColor.h"
 #include "WHMemoryManager.h"
 
 #include "cuda.h"
@@ -15,21 +15,19 @@ namespace whirl {
 
 template<WHMemoryLocation MemLocation_> class WHBuffer;
 
-template<WHMemoryLocation MemLocation_>
-class WHBuffer
+template<>
+class WHBuffer<WHMemoryLocation::CPU>
 {
 public:
     using Byte_  = uint8_t;
     using Size_  = struct { size_t cx, cy; };
     using Color_ = WHColor;
     
-    friend class WHBuffer<WHMemoryLocation::CPU>;
     friend class WHBuffer<WHMemoryLocation::GPU>;
 
     static std::shared_ptr<WHBaseMemoryManager> create_mem_manager(const Size_& alloc_size);
     
-    template<WHMemoryLocation MemLocation>
-    friend void swap(WHBuffer<MemLocation>&, WHBuffer<MemLocation>&);
+    __host__ void swap(WHBuffer&, WHBuffer&);
 
     __host__ WHBuffer(): mem_manager_(), byte_size_({}), color_buf_(nullptr) {};
     __host__ explicit WHBuffer(const Size_& pixel_size_set);
@@ -37,8 +35,8 @@ public:
     template<WHMemoryLocation OtherMemLocation> __host__ WHBuffer                           (const WHBuffer<OtherMemLocation>&);
     template<WHMemoryLocation OtherMemLocation> __host__ WHBuffer<MemLocation_>& operator = (const WHBuffer<OtherMemLocation>&);
     
-    __host__ WHBuffer                           (WHBuffer<MemLocation_>&&);
-    __host__ WHBuffer<MemLocation_>& operator = (WHBuffer<MemLocation_>&&);
+    __host__ WHBuffer             (WHBuffer&&);
+    __host__ WHBuffer& operator = (WHBuffer&&);
     
     __host__ virtual ~WHBuffer();
     
@@ -59,20 +57,12 @@ private:
     Byte_* color_buf_;
 };
 
-template<>
 std::shared_ptr<WHBaseMemoryManager> WHBuffer<WHMemoryLocation::CPU>::create_mem_manager(const Size_& alloc_size)
 {
-    return WHHostMemoryManager<WHAllocType::CPU>::instance();
+    return WHHostMemoryManager<WHAllocType::HOST>::instance();
 }
 
-template<>
-std::shared_ptr<WHBaseMemoryManager> WHBuffer<WHMemoryLocation::GPU>::create_mem_manager(const Size_& alloc_size)
-{
-    return WHHostMemoryManager<WHAllocType::GPU>::instance();
-}
-
-template<WHMemoryLocation MemLocation_>
-__host__ WHBuffer<MemLocation_>::WHBuffer(const Size_& pixel_size_set): 
+__host__ WHBuffer<WHMemoryLocation::CPU>::WHBuffer(const Size_& pixel_size_set): 
     mem_manager_(create_mem_manager(pixel_size_set)),
     byte_size_  ({ pixel_size_set.cx*3 + pixel_size_set.cx%4, pixel_size_set.cy }),
     color_buf_  (nullptr)

@@ -1,38 +1,42 @@
 #pragma once
+
 #include "Windows.h"
 
-struct WHColor
+#include "cuda.h"
+#include "cuda_runtime.h"
+#include "math_functions.h"
+
+namespace whirl {
+
+typedef float4 WHColor;
+
+const WHColor WHColor::BLACK = WHColor(0.0f, 0.0f, 0.0f), 
+              WHColor::WHITE = WHColor(1.0f, 1.0f, 1.0f),
+              WHColor::RED   = WHColor(1.0f, 0.0f, 0.0f), 
+              WHColor::GREEN = WHColor(0.0f, 1.0f, 0.0f), 
+              WHColor::BLUE  = WHColor(0.0f, 0.0f, 1.0f);
+
+WHColor  whMakeColorFloat(float   x, float   y, float   z, float alpha = 1.0f);
+WHColor  whMakeColorByte (uint8_t x, uint8_t y, uint8_t z, float alpha = 1.0f);
+COLORREF whToColorref    (const WHColor& color);
+
+WHColor whMakeColorFloat(float x, float y, float z, float alpha = 1.0f)
 {
-public:
-    using Byte_ = BYTE;
+    return make_float4(x, y, z, alpha);
+}
 
-	WHColor() : r(0), g(0), b(0) {}
+WHColor  whMakeColorByte (uint8_t x, uint8_t y, uint8_t z, float alpha = 1.0f)
+{
+    float factor = 1.0f/255.0f;
 
-	WHColor(Byte_ r_set, Byte_ g_set, Byte_ b_set) : r(r_set), g(g_set), b(b_set) {}
+    return make_float4(float(x)*factor, float(y)*factor, float(z)*factor, alpha);
+}
 
-	WHColor(COLORREF color_set) :
-		r(GetRValue(color_set)),
-		g(GetGValue(color_set)),
-		b(GetBValue(color_set))
-	{}
+COLORREF whToColorref(const WHColor& color)
+{
+    return RGB(255.0f*color.x, 255.0f*color.y, 255.0f*color.z);
+}
 
-	operator COLORREF() const
-	{
-		return RGB(r, g, b);
-	}
-
-public:    
-    static const WHColor BLACK, WHITE, RED, GREEN, BLUE;
-    
-public:    
-	Byte_ r, g, b;
-};
-
-const WHColor WHColor::BLACK = WHColor(  0,   0,   0), 
-              WHColor::WHITE = WHColor(255, 255, 255), 
-              WHColor::RED   = WHColor(255,   0,   0), 
-              WHColor::GREEN = WHColor(  0, 255,   0), 
-              WHColor::BLUE  = WHColor(  0,   0, 255);
 
 inline WHColor operator *  (const WHColor&  color,	        float factor);
 inline WHColor operator *  (         float factor, const WHColor&  color);
@@ -83,3 +87,5 @@ WHColor ellColorMix(const WHColor& c1, float factor, const WHColor& c2)
 
 	return WHColor((c1.r - c2.r)*factor + c2.r, (c1.g - c2.g)*factor + c2.g, (c1.b - c2.b)*factor + c2.b);
 }
+
+}//namespace whirl
