@@ -13,38 +13,28 @@
 
 namespace whirl {
 
-template<WHMemoryLocation MemLocation_> class WHBuffer;
+template<WHAllocType AllocType_> 
+class WHostHBuffer;
 
-template<WHMemoryLocation MemLocation_>
-class WHBuffer
+class WHDeviceBuffer;
+
+template<WHAllocType AllocType_>
+class WHHostBuffer : public WHAbstractBuffer
 {
 public:
-    using Byte_  = uint8_t;
-    using Size_  = struct { size_t cx, cy; };
-    using Color_ = WHColor;
-    
-    friend class WHBuffer<WHMemoryLocation::CPU>;
-    friend class WHBuffer<WHMemoryLocation::GPU>;
+    friend void process(WHHostBuffer<AllocType_>*, WHDeviceBuffer*);
 
-    static std::shared_ptr<WHBaseMemoryManager> create_mem_manager(const Size_& alloc_size);
-    
-    template<WHMemoryLocation MemLocation>
-    friend void swap(WHBuffer<MemLocation>&, WHBuffer<MemLocation>&);
+    __host__ WHHostBuffer(): mem_manager_(), WHAbstractBuffer({}, nullptr) {};
+    __host__ explicit WHHostBuffer(const Size_& pixel_size_set);
 
-    __host__ WHBuffer(): mem_manager_(), byte_size_({}), color_buf_(nullptr) {};
-    __host__ explicit WHBuffer(const Size_& pixel_size_set);
-
-    template<WHMemoryLocation OtherMemLocation> __host__ WHBuffer                           (const WHBuffer<OtherMemLocation>&);
-    template<WHMemoryLocation OtherMemLocation> __host__ WHBuffer<MemLocation_>& operator = (const WHBuffer<OtherMemLocation>&);
+    __host__ WHHostBuffer             (const WHHostBuffer&);
+    __host__ WHHostBuffer& operator = (const WHHostBuffer&);
     
-    __host__ WHBuffer                           (WHBuffer<MemLocation_>&&);
-    __host__ WHBuffer<MemLocation_>& operator = (WHBuffer<MemLocation_>&&);
+    __host__ WHHostBuffer             (WHHostBuffer&&);
+    __host__ WHHostBuffer& operator = (WHHostBuffer&&);
     
-    __host__ virtual ~WHBuffer();
+    __host__ virtual ~WHHostBuffer();
     
-    __inline__ __host__ __device__ bool   set_pixel(size_t x, size_t y, Color_ color_set);
-    __inline__ __host__ __device__ Color_ get_pixel(size_t x, size_t y) const;
-
     __inline__ __host__ __device__ const std::shared_ptr<WHBaseMemoryManager>& get_mem_manager() const { return mem_manager_; }
     __inline__ __host__ __device__ Size_                                       get_pixel_size () const { return { byte_size_.cx/3, byte_size_.cy }; }//could return pixel_size_set + 3 if pixel_size_set%4 == 3
     __inline__ __host__ __device__ const Byte_*                                get_byte_buffer() const { return color_buf_; }
@@ -53,10 +43,7 @@ public:
     __host__ size_t get_bytes_from_dc(HDC dc);
     */
 private:
-    std::shared_ptr<WHBaseMemoryManager> mem_manager_;
-
-    Size_  byte_size_;
-    Byte_* color_buf_;
+    std::shared_ptr<WHHostMemoryManager<AllocType_>> mem_manager_;
 };
 
 template<>

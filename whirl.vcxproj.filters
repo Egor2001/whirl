@@ -19,6 +19,7 @@
     <ClInclude Include="render\WHMemoryManager.h" />
     <ClInclude Include="render\WHDeviceBuffer.h" />
     <ClInclude Include="render\WHAbstractBuffer.h" />
+    <ClInclude Include="render\WHMemoryChunk.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

@@ -146,20 +146,20 @@ public:
         WHIRL_CUDA_CALL(cudaFree(ptr));
     }
     
-    void memory_set(void* dst, int value, size_t size, cudaStream_t stream) const
+    void async_memory_set(void* dst, int value, size_t size, cudaStream_t stream) const
     {
         WHIRL_TRACE    ("memset pinned [pointer: pinned_{0:p}, size: {1}, value: {2:#x}, stream_handle: {3:#x}]", dst, size, value, stream);
         WHIRL_CUDA_CALL(cudaMemsetAsync(dst, value, size, stream));
     }
 
-    void copy_from_device(void* dst, const void* src, size_t size, cudaStream_t stream) const
+    void async_copy_from_device(void* dst, const void* src, size_t size, cudaStream_t stream) const
     {
         WHIRL_TRACE("memcpy from device to pinned [destination: pinned_{0:p}, source: device_{1:p}, "
                                                   "size: {2}, stream_handle: {3:#x}]", dst, src, size, stream);
         WHIRL_CUDA_CALL(cudaMemcpyAsync(dst, src, size, cudaMemcpyDeviceToHost, stream));
     }
     
-    void copy_to_device(void* dst, const void* src, size_t size, cudaStream_t stream) const
+    void async_copy_to_device(void* dst, const void* src, size_t size, cudaStream_t stream) const
     {
         WHIRL_TRACE("memcpy from pinned to device [destination: device_{0:p}, source: pinned_{1:p}, "
                                                    "size: {2}, stream_handle: {3:#x}]", dst, src, size, stream);
@@ -167,6 +167,8 @@ public:
     }
 };
 
+//TODO: use this memory manager if concurrentManagedAccess is not 0 for specified device. 
+//So may be it's need to allocate managed memory only with cudaAttachHost flag 
 template<>
 class WHHostMemoryManager<WHAllocType::MANAGED> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::MANAGED>>
 {
@@ -191,9 +193,9 @@ public:
     {
         void* result = nullptr;
 
+        WHIRL_TRACE    ("alloc managed [pointer: device_{0:p}, size: {1}, flags: {2:#x}]", result, size, flags);
         WHIRL_CUDA_CALL(cudaMallocManaged(&result, size, flags));
-        WHIRL_TRACE    ("alloc managed [pointer: device_{0:p}, size: {1}, flags: {2:d}] {3}", result, size, flags, (result ? "success" : " FAILURE"));
-
+        
         return result;
     }
 
@@ -209,22 +211,29 @@ public:
         WHIRL_CUDA_CALL(cudaMemset(dst, value, size));
     }
 
-    void prefetch_to_host(const void* src, size_t size, cudaStream_t stream = nullptr) const
+    void prefetch_to_host(const void* ptr, size_t size, cudaStream_t stream = nullptr) const
     {
-        WHIRL_TRACE    ("prefetch to host [source: managed_{0:p}, size: {1}, device: cudaCpuDeviceId, stream: {2:#x}]", src, size, stream);
-        WHIRL_CUDA_CALL(cudaMemPrefetchAsync(src, size, cudaCpuDeviceId, stream));
+        WHIRL_TRACE    ("prefetch to host [pointer: managed_{0:p}, size: {1}, device: cudaCpuDeviceId, stream: {2:#x}]", ptr, size, stream);
+        WHIRL_CUDA_CALL(cudaMemPrefetchAsync(ptr, size, cudaCpuDeviceId, stream));
     }
     
-    void prefetch_to_device(const void* src, size_t size, int device, cudaStream_t stream = nullptr) const
+    void prefetch_to_device(const void* ptr, size_t size, int device, cudaStream_t stream = nullptr) const
     {
-        WHIRL_TRACE    ("prefetch to device [source: managed_{0:p}, size: {1}, device: {2:d}, stream: {3:#x}]", src, size, device, stream);
-        WHIRL_CUDA_CALL(cudaMemPrefetchAsync(src, size, device, stream));
+        WHIRL_TRACE    ("prefetch to device [pointer: managed_{0:p}, size: {1}, device: {2:d}, stream: {3:#x}]", ptr, size, device, stream);
+        WHIRL_CUDA_CALL(cudaMemPrefetchAsync(ptr, size, device, stream));
     }
 
-    void mem_advice(const void* src, size_t size, cudaMemoryAdvise advice, int device = cudaCpuDeviceId)
+    //TODO: always use while executing kernel in stream (allows to access associated memory from host while device in this stream is idle)
+    void attach_async(cudaStream_t stream, const void* ptr, unsigned int flags = cudaMemAttachSingle)
     {
-        WHIRL_TRACE    ("memory advice [source: managed_{0:p}, size: {1}, advice: {2:d}, device: {3:d}]", src, size, advice, device);
-        WHIRL_CUDA_CALL(cudaMemAdvise(src, size, advice, device));
+        WHIRL_TRACE    ("attach async [pointer: managed_{0:p}, stream: {1:#x}, flags: {2:#x}]", ptr, stream, flags);
+        WHIRL_CUDA_CALL(cudaStreamAttachMemAsync(stream, ptr, 0, flags));
+    }
+
+    void mem_advice(const void* ptr, size_t size, cudaMemoryAdvise advice, int device = cudaCpuDeviceId)
+    {
+        WHIRL_TRACE    ("memory advice [pointer: managed_{0:p}, size: {1}, advice: {2:d}, device: {3:d}]", ptr, size, advice, device);
+        WHIRL_CUDA_CALL(cudaMemAdvise(ptr, size, advice, device));
     }
 };
 

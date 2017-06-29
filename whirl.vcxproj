@@ -31,6 +31,7 @@
     <ClInclude Include="render\WHDeviceBuffer.h" />
     <ClInclude Include="render\WHHostBuffer.h" />
     <ClInclude Include="render\WHBuffer.h" />
+    <ClInclude Include="render\WHMemoryChunk.h" />
     <ClInclude Include="render\WHMemoryManager.h" />
     <ClInclude Include="render\WHColor.h" />
     <ClInclude Include="render\WHMemory.h" />
