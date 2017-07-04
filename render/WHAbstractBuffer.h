@@ -10,23 +10,39 @@
 
 namespace whirl {
 
-class WHAbstractBuffer abstract
+class WHBuffer
 {
 public:
     typedef uint8_t                     Byte_;
     typedef struct { uint32_t cx, cy; } Size_;
 
-    __host__ __device__ WHAbstractBuffer() = default;
-    __host__ __device__ WHAbstractBuffer(const Size_& byte_buffer_size_set, Byte_* byte_buffer_ptr_set): 
-                            byte_buffer_size_(byte_buffer_size_set), byte_buffer_ptr_(byte_buffer_ptr_set) {}
+    WHBuffer() = default;
+    
+    WHBuffer(std::shared_ptr<WHAbstractMemoryManager> mem_manager_set, const Size_& pixel_size, unsigned int alloc_flags): 
+        mem_manager_     (mem_manager_set), 
+        byte_buffer_size_({ pixel_size.cx*3 + pixel_size.cx%4, pixel_size.cy }), 
+        byte_buffer_ptr_ (static_cast<Byte_*>(mem_manager_->allocate(byte_buffer_size_.cx * byte_buffer_size_.cy, alloc_flags)))
+    {
+        WHIRL_TRACE("creating buffer [alloc type: {0:d}, size: [{1:d}, {2:d}]]", mem_manager_->alloc_type(), pixel_size.cx, pixel_size.cy);
+    }
 
-    __host__ __device__ virtual ~WHAbstractBuffer() = default;
+    virtual ~WHBuffer()
+    {
+        if (byte_buffer_ptr_)
+            mem_manager_->deallocate(static_cast<void*>(byte_buffer_ptr_));
+        
+        byte_buffer_size_ = {};
+        byte_buffer_ptr_  = nullptr;
 
-    __host__ __device__       Byte_* get_byte_buffer  ()       { return byte_buffer_ptr_; }
-    __host__ __device__ const Byte_* get_byte_buffer  () const { return byte_buffer_ptr_; }
-    __host__ __device__ const Size_  get_size_in_bytes() const { return byte_buffer_size_; }
+        WHIRL_TRACE("releasing buffer [alloc type: {0:d}]", mem_manager_->alloc_type());
+    }
 
-    __host__ __device__ bool set_pixel(uint32_t x, uint32_t y, const WHColor& color_set)
+          Byte_* get_byte_buffer   ()       { return byte_buffer_ptr_; }
+    const Byte_* get_byte_buffer   () const { return byte_buffer_ptr_; }
+    const Size_& get_size_in_bytes () const { return byte_buffer_size_; }
+          Size_  get_size_in_pixels() const { return { byte_buffer_size_.cx/3, byte_buffer_size_.cy }; }
+
+    bool set_pixel(uint32_t x, uint32_t y, const WHColor& color_set)
     {
         WHIRL_CHECK_NOT_EQ(byte_buffer_ptr_, nullptr);
         WHIRL_CHECK_LT    (3*x, byte_buffer_size_.cx);
@@ -39,7 +55,7 @@ public:
         byte_buffer_ptr_[offset+2] = color_set.z*255;
     }
 
-    __host__ __device__ WHColor get_pixel(uint32_t x, uint32_t y)
+    WHColor get_pixel(uint32_t x, uint32_t y)
     {
         WHIRL_CHECK_NOT_EQ(byte_buffer_ptr_, nullptr);
         WHIRL_CHECK_LT    (3*x, byte_buffer_size_.cx);
@@ -53,6 +69,8 @@ public:
     }
 
 protected:
+    std::shared_ptr<WHAbstractMemoryManager> mem_manager_;
+
     Size_  byte_buffer_size_;
     Byte_* byte_buffer_ptr_;
 };

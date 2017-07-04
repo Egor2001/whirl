@@ -81,18 +81,18 @@ private:
 template<class MemoryManager_>
 std::shared_ptr<WHBaseMemoryManager> WHSingletonMemoryManager<MemoryManager_>::instance_;
 
-template<WHAllocType> class WHHostMemoryManager;
+template<WHAllocType> class WHMemoryManager;
 
 template<>
-class WHHostMemoryManager<WHAllocType::HOST> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::HOST>>
+class WHMemoryManager<WHAllocType::HOST> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::HOST>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::HOST>>;
+    friend class WHSingletonMemoryManager<WHMemoryManager<WHAllocType::HOST>>;
 
-    WHHostMemoryManager(): WHSingletonMemoryManager(WHAllocType::HOST) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::HOST) {}
 
 public:
-    virtual ~WHHostMemoryManager() = default;
+    virtual ~WHMemoryManager() = default;
 
     virtual void* allocate(size_t size, unsigned int flags = 0) const override 
     {
@@ -129,15 +129,15 @@ public:
 };
 
 template<>
-class WHHostMemoryManager<WHAllocType::DEVICE> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::DEVICE>>
+class WHMemoryManager<WHAllocType::DEVICE> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::DEVICE>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHHostMemoryManager>;
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
 
-    WHHostMemoryManager(): WHSingletonMemoryManager(WHAllocType::DEVICE) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::DEVICE) {}
 
 public:
-    virtual ~WHHostMemoryManager() = default;
+    virtual ~WHMemoryManager() = default;
 
     virtual void* allocate(size_t size, unsigned int flags = 0) const override
     {
@@ -175,15 +175,15 @@ public:
 };
 
 template<>
-class WHHostMemoryManager<WHAllocType::PINNED> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::PINNED>>
+class WHMemoryManager<WHAllocType::PINNED> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::PINNED>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHHostMemoryManager>;
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
 
-    WHHostMemoryManager(): WHSingletonMemoryManager(WHAllocType::PINNED) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::PINNED) {}
 
 public:
-    virtual ~WHHostMemoryManager() = default;
+    virtual ~WHMemoryManager() = default;
 
     virtual void* allocate(size_t size, unsigned int flags = 0) const override
     {

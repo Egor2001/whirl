@@ -17,11 +17,31 @@ enum class WHAllocType
     NONE = 0, HOST = 1, PINNED = 2, MANAGED = 3, DEVICE = 4 
 };
 
+class WHAbstractMemoryManager abstract
+{
+public:
+    WHAbstractMemoryManager():                           alloc_type_(WHAllocType::NONE) {}
+    WHAbstractMemoryManager(WHAllocType alloc_type_set): alloc_type_(alloc_type_set)    {}
+
+    virtual ~WHAbstractMemoryManager()
+    {
+        alloc_type_ = WHAllocType::NONE;
+    }
+
+    WHAllocType alloc_type() const { return alloc_type_; }
+
+    virtual void* allocate  (size_t size, unsigned int flags) const = 0;
+    virtual void  deallocate(void* ptr)                       const = 0;
+
+protected:
+    WHAllocType alloc_type_;
+};
+
 template<class MemoryManager_>
-class WHSingletonMemoryManager abstract
+class WHSingletonMemoryManager abstract : public WHAbstractMemoryManager
 {
 protected:
-    WHSingletonMemoryManager(WHAllocType alloc_type_set): alloc_type_(alloc_type_set) 
+    WHSingletonMemoryManager(WHAllocType alloc_type_set): WHAbstractMemoryManager(alloc_type_set) 
     {
         WHIRL_TRACE("creating singleton memory manager [class name: {0:s}, alloc type: {1:d}]", typeid(MemoryManager_).name(), alloc_type_);
         
@@ -39,13 +59,14 @@ private:
     WHSingletonMemoryManager& operator = (WHSingletonMemoryManager&&) = delete;
     
 public:
-    virtual ~WHSingletonMemoryManager()
+    virtual ~WHSingletonMemoryManager() override
     {
         WHIRL_TRACE("releasing singleton memory manager [class name: {0:s}, alloc type: {1:d}]", typeid(MemoryManager_).name(), alloc_type_);
-
-        alloc_type_ = WHAllocType::NONE;
     }
     
+    virtual void* allocate  (size_t size, unsigned int flags) const override = 0;
+    virtual void  deallocate(void* ptr)                       const override = 0;
+
     static std::shared_ptr<MemoryManager_> instance()
     {
         if (!instance_) instance_ = std::shared_ptr<MemoryManager_>(new MemoryManager_);
@@ -55,32 +76,30 @@ public:
 
 private:
     static std::shared_ptr<MemoryManager_> instance_;
-
-    WHAllocType alloc_type_;
 };
 
 template<class MemoryManager_>
 std::shared_ptr<MemoryManager_> WHSingletonMemoryManager<MemoryManager_>::instance_;
 
-template<WHAllocType> class WHHostMemoryManager;
+template<WHAllocType> class WHMemoryManager;
 
 template<>
-class WHHostMemoryManager<WHAllocType::HOST> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::HOST>>
+class WHMemoryManager<WHAllocType::HOST> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::HOST>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::HOST>>;
+    friend class WHSingletonMemoryManager<WHMemoryManager<WHAllocType::HOST>>;
 
-    WHHostMemoryManager(): WHSingletonMemoryManager(WHAllocType::HOST) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::HOST) {}
 
 public:
-    virtual ~WHHostMemoryManager() = default;
+    virtual ~WHMemoryManager() override = default;
 
-    static bool is_supported(int device) 
+    static bool is_supported(int device)
     { 
         return true; 
     }
 
-    void* allocate(size_t size) const
+    virtual void* allocate(size_t size, unsigned int flags = 0u) const override
     {
         void* result = std::malloc(size);
 
@@ -89,7 +108,7 @@ public:
         return result;
     }
 
-    void deallocate(void* ptr) const
+    virtual void deallocate(void* ptr) const override
     {
         WHIRL_TRACE("dealloc host [pointer: host_{0:p}]", ptr);
         std::free(ptr);
@@ -115,22 +134,22 @@ public:
 };
 
 template<>
-class WHHostMemoryManager<WHAllocType::PINNED> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::PINNED>>
+class WHMemoryManager<WHAllocType::PINNED> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::PINNED>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHHostMemoryManager>;
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
 
-    WHHostMemoryManager(): WHSingletonMemoryManager(WHAllocType::PINNED) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::PINNED) {}
 
 public:
-    virtual ~WHHostMemoryManager() = default;
+    virtual ~WHMemoryManager() override = default;
 
     static bool is_supported(int device) 
     { 
         return true; 
     }
 
-    void* allocate(size_t size, unsigned int flags = cudaHostAllocDefault) const
+    virtual void* allocate(size_t size, unsigned int flags = cudaHostAllocDefault) const override
     {
         void* result = nullptr;
 
@@ -140,7 +159,7 @@ public:
         return result;
     }
 
-    void deallocate(void* ptr) const
+    virtual void deallocate(void* ptr) const override
     {
         WHIRL_TRACE    ("dealloc pinned [pointer: pinned_{0:p}]", ptr);
         WHIRL_CUDA_CALL(cudaFree(ptr));
@@ -170,15 +189,15 @@ public:
 //TODO: use this memory manager if concurrentManagedAccess is not 0 for specified device. 
 //So may be it's need to allocate managed memory only with cudaAttachHost flag 
 template<>
-class WHHostMemoryManager<WHAllocType::MANAGED> : public WHSingletonMemoryManager<WHHostMemoryManager<WHAllocType::MANAGED>>
+class WHMemoryManager<WHAllocType::MANAGED> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::MANAGED>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHHostMemoryManager>;
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
 
-    WHHostMemoryManager(): WHSingletonMemoryManager(WHAllocType::MANAGED) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::MANAGED) {}
 
 public:
-    virtual ~WHHostMemoryManager() = default;
+    virtual ~WHMemoryManager() override = default;
     
     static bool is_supported(int device) 
     {
@@ -189,7 +208,7 @@ public:
         return !!result; 
     }
 
-    void* allocate(size_t size, unsigned int flags = cudaMemAttachGlobal) const
+    virtual void* allocate(size_t size, unsigned int flags = cudaMemAttachGlobal) const override
     {
         void* result = nullptr;
 
@@ -199,7 +218,7 @@ public:
         return result;
     }
 
-    void deallocate(void* ptr) const
+    virtual void deallocate(void* ptr) const override
     {
         WHIRL_TRACE    ("dealloc managed [pointer: managed_{0:p}]", ptr);
         WHIRL_CUDA_CALL(cudaFree(ptr));
@@ -237,22 +256,23 @@ public:
     }
 };
 
-class WHDeviceMemoryManager : public WHSingletonMemoryManager<WHDeviceMemoryManager>
+template<>
+class WHMemoryManager<WHAllocType::DEVICE> : public WHSingletonMemoryManager<WHMemoryManager<WHAllocType::DEVICE>>
 {
 private:
-    friend class WHSingletonMemoryManager<WHDeviceMemoryManager>;
+    friend class WHSingletonMemoryManager<WHMemoryManager>;
 
-    WHDeviceMemoryManager(): WHSingletonMemoryManager(WHAllocType::DEVICE) {}
+    WHMemoryManager(): WHSingletonMemoryManager(WHAllocType::DEVICE) {}
 
 public:
-    virtual ~WHDeviceMemoryManager() = default;
+    virtual ~WHMemoryManager() override = default;
     
     static bool is_supported(int device) 
     {
         return true;
     }
 
-    void* allocate(size_t size) const
+    virtual void* allocate(size_t size, unsigned int flags = 0u) const override
     {
         void* result = nullptr;
 
@@ -262,7 +282,7 @@ public:
         return result;
     }
 
-    void deallocate(void* ptr) const
+    virtual void deallocate(void* ptr) const override
     {
         WHIRL_TRACE    ("dealloc device [pointer: device_{0:p}]", ptr);
         WHIRL_CUDA_CALL(cudaFree(ptr));

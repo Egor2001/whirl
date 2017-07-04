@@ -59,7 +59,7 @@ private:
 
 std::shared_ptr<WHBaseMemoryManager> WHBuffer<WHMemoryLocation::CPU>::create_mem_manager(const Size_& alloc_size)
 {
-    return WHHostMemoryManager<WHAllocType::HOST>::instance();
+    return WHMemoryManager<WHAllocType::HOST>::instance();
 }
 
 WHBuffer<WHMemoryLocation::CPU>::WHBuffer(const Size_& pixel_size_set): 

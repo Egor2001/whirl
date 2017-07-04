@@ -19,12 +19,12 @@ class WHostHBuffer;
 class WHDeviceBuffer;
 
 template<WHAllocType AllocType_>
-class WHHostBuffer : public WHAbstractBuffer
+class WHHostBuffer : public WHBuffer
 {
 public:
     friend void process(WHHostBuffer<AllocType_>*, WHDeviceBuffer*);
 
-    __host__ WHHostBuffer(): mem_manager_(), WHAbstractBuffer({}, nullptr) {};
+    __host__ WHHostBuffer(): mem_manager_(), WHBuffer({}, nullptr) {};
     __host__ explicit WHHostBuffer(const Size_& pixel_size_set);
 
     __host__ WHHostBuffer             (const WHHostBuffer&);
@@ -43,7 +43,7 @@ public:
     __host__ size_t get_bytes_from_dc(HDC dc);
     */
 private:
-    std::shared_ptr<WHHostMemoryManager<AllocType_>> mem_manager_;
+    std::shared_ptr<WHMemoryManager<AllocType_>> mem_manager_;
 };
 
 template<>
