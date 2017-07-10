@@ -29,7 +29,7 @@ private:
     }
 
 public:
-    std::shared_ptr<WHStreamManager> instance() { return instance_; }
+    static std::shared_ptr<WHStreamManager> instance() { return instance_; }
 
     ~WHStreamManager()
     {
@@ -39,7 +39,7 @@ public:
         special_stream_vec_.clear();
     }
     
-    std::vector<WHMemoryChunk> get_chunks(size_t size)
+    WHChunkBuffer get_chunks(size_t size)
     {
         size_t engine_streams_num = engine_stream_vec_.size();//TODO: count only idle streams
         
@@ -52,7 +52,7 @@ public:
     
         WHIRL_TRACE("stream manager get chunks [size: {0:d}, chunks num: {1:d}]", size, result.size());
 
-        return result;
+        return WHChunkBuffer(std::move(result));
     }
 
     std::shared_ptr<WHStream> get_stream() 

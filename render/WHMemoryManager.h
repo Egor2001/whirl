@@ -114,19 +114,19 @@ public:
         std::free(ptr);
     }
     
-    void memory_set(void* dst, int value, size_t size, cudaStream_t stream = nullptr) const
+    void memory_set(void* dst, int value, size_t size) const
     {
         WHIRL_TRACE("memset host [pointer: host_{0:p}, size: {1}, value: {2:#x}]", dst, size, value);
         std::memset(dst, value, size);
     }
    
-    void copy_from_device(void* dst, const void* src, size_t size, cudaStream_t stream = nullptr) const
+    void copy_from_device(void* dst, const void* src, size_t size) const
     {
         WHIRL_TRACE    ("memcpy from device to host [destination: host_{0:p}, source: device_{1:p}, size: {2}]", dst, src, size);
         WHIRL_CUDA_CALL(cudaMemcpy(dst, src, size, cudaMemcpyDeviceToHost));
     }
     
-    void copy_to_device(void* dst, const void* src, size_t size, cudaStream_t stream = nullptr) const
+    void copy_to_device(void* dst, const void* src, size_t size) const
     {
         WHIRL_TRACE    ("memcpy from host to device [destination: device_{0:p}, source: host_{1:p}, size: {2}]", dst, src, size);
         WHIRL_CUDA_CALL(cudaMemcpy(dst, src, size, cudaMemcpyHostToDevice));
