@@ -39,20 +39,9 @@ public:
         special_stream_vec_.clear();
     }
     
-    WHChunkBuffer get_chunks(size_t size)
+    std::shared_ptr<WHChunkBuffer> get_chunks(const WHChunkBuffer::Size_& pixel_size)
     {
-        size_t engine_streams_num = engine_stream_vec_.size();//TODO: count only idle streams
-        
-        std::vector<WHMemoryChunk> result = std::vector<WHMemoryChunk>(engine_streams_num);
-        
-        float delta = float(size)/engine_streams_num;
-
-        for (uint32_t i = 0; i < engine_streams_num; i++)
-            result[i] = WHMemoryChunk(ptrdiff_t(i*delta), static_cast<size_t>(ptrdiff_t((i+1)*delta) - ptrdiff_t(i*delta)), engine_stream_vec_[i]);
-    
-        WHIRL_TRACE("stream manager get chunks [size: {0:d}, chunks num: {1:d}]", size, result.size());
-
-        return WHChunkBuffer(std::move(result));
+        return std::make_shared<WHChunkBuffer>(pixel_size, engine_stream_vec_);
     }
 
     std::shared_ptr<WHStream> get_stream() 

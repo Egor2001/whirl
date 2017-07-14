@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClInclude Include="render\WHColor.h" />
     <ClInclude Include="render\WHWindow.h" />
-    <ClInclude Include="render\WHMemory.h" />
     <ClInclude Include="logger\WHLogger.h" />
     <ClInclude Include="engine\WHRay.h" />
     <ClInclude Include="engine\WHCamera.h" />
@@ -14,10 +13,8 @@
     <ClInclude Include="math\WHMatrix.h" />
     <ClInclude Include="render\WHStream.h" />
     <ClInclude Include="render\WHStreamManager.h" />
-    <ClInclude Include="render\WHHostBuffer.h" />
     <ClInclude Include="render\WHAbstractMemoryStrategy.h" />
     <ClInclude Include="render\WHMemoryManager.h" />
-    <ClInclude Include="render\WHDeviceBuffer.h" />
     <ClInclude Include="render\WHAbstractBuffer.h" />
     <ClInclude Include="render\WHMemoryChunk.h" />
   </ItemGroup>

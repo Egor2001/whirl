@@ -28,13 +28,10 @@
     <ClInclude Include="math\WHVector.h" />
     <ClInclude Include="render\WHAbstractBuffer.h" />
     <ClInclude Include="render\WHAbstractMemoryStrategy.h" />
-    <ClInclude Include="render\WHDeviceBuffer.h" />
-    <ClInclude Include="render\WHHostBuffer.h" />
     <ClInclude Include="render\WHBuffer.h" />
     <ClInclude Include="render\WHMemoryChunk.h" />
     <ClInclude Include="render\WHMemoryManager.h" />
     <ClInclude Include="render\WHColor.h" />
-    <ClInclude Include="render\WHMemory.h" />
     <ClInclude Include="render\WHStream.h" />
     <ClInclude Include="render\WHStreamManager.h" />
     <ClInclude Include="render\WHWindow.h" />
