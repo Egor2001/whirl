@@ -13,7 +13,6 @@
 #include "Windows.h"
 
 #include "../logger/WHLogger.h"
-#include "WHAbstractBuffer.h"
 
 namespace whirl {
 
@@ -36,21 +35,14 @@ public:
     HWND create (const SIZE& size_set);
     void destroy();
 
-    template<WHMemoryLocation mem_location>
-    int flush(const WHBuffer<mem_location>* buffer);
-	//template<WHMemoryLocation MemLocation> int flush_back(WHBuffer<MemLocation>* buffer) const;
+    int flush     (const WHBuffer* buffer);
+	int flush_back(      WHBuffer* buffer);
         
     HWND get_handle  () const { return wnd_handle_; }
     SIZE get_wnd_size() const { return wnd_size_; }
 
     void show() const { UpdateWindow(wnd_handle_); ShowWindow(wnd_handle_, SW_SHOW); }
     void hide() const { UpdateWindow(wnd_handle_); ShowWindow(wnd_handle_, SW_HIDE); }
-
-    template<WHMemoryLocation mem_location>
-    WHBuffer<mem_location> create_buffer() 
-    { 
-        return WHBuffer<mem_location>({ static_cast<size_t>(wnd_size_.cx), static_cast<size_t>(wnd_size_.cy) }); 
-    }
 
 private:
     void thread_proc_();
@@ -258,36 +250,44 @@ LRESULT WHWindow::msg_paint_proc_(HWND wnd, WPARAM wparam, LPARAM lparam)
 	return !EndPaint(wnd, &paintStruct);
 }
 
-template<WHMemoryLocation mem_location>
-int WHWindow::flush(const WHBuffer<mem_location>* buffer)
+int WHWindow::flush(const WHBuffer* buffer)
 {
     int result = 0;
 
+    auto memory_operation = [this, &result, buffer](size_t index, size_t height_shift, size_t height_size, cudaStream_t stream_handle)
+    {
+        result += SetDIBits(mirror_dc_, static_cast<HBITMAP>(GetCurrentObject(mirror_dc_, OBJ_BITMAP)), 
+                            height_shift, height_size, buffer->get_allocated_chunk(index), &bmp_info_, DIB_RGB_COLORS);
+	};
+
 	mutex_.lock();
 	{
-        result = SetDIBits(mirror_dc_, static_cast<HBITMAP>(GetCurrentObject(mirror_dc_, OBJ_BITMAP)), 
-                           0, bmp_info_.bmiHeader.biHeight, buffer->get_byte_buffer(), &bmp_info_, DIB_RGB_COLORS);
-	}
+        buffer->get_chunk_buffer()->iterate(memory_operation);
+    }
 	mutex_.unlock();
     
     RedrawWindow(wnd_handle_, nullptr, nullptr, RDW_INTERNALPAINT | RDW_INVALIDATE | RDW_UPDATENOW);
 
     return result;
 }
-/*
-template<WHMemoryLocation MemLocation>
-int WHWindow::flush_back(WHBuffer<MemLocation>* buffer) const
+
+int WHWindow::flush_back(WHBuffer* buffer)
 {
     int result = 0;
+    
+    auto memory_operation = [this, &result, buffer](size_t index, size_t height_shift, size_t height_size, cudaStream_t stream_handle)
+    {
+        result += GetDIBits(mirror_dc_, static_cast<HBITMAP>(GetCurrentObject(mirror_dc_, OBJ_BITMAP)), 
+                            height_shift, height_size, buffer->get_allocated_chunk(index), &bmp_info_, DIB_RGB_COLORS);
+	};
 
 	mutex_.lock();
 	{
-        result = buffer->get_bytes_from_dc(mirror_dc_);
+        buffer->get_chunk_buffer()->iterate(memory_operation);
     }
 	mutex_.unlock();
-
+    
     return result;
 }
-*/
 
 }//namespace whirl

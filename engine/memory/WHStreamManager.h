@@ -1,9 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <type_traits>
-#include <thread>
-#include <stdexcept>
+#include <memory>
 
 #include "../logger/WHLogger.h"
 #include "WHStream.h"

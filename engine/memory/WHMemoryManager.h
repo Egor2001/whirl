@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-#include <typeinfo>
 #include <memory>
 
 #include "cuda.h"

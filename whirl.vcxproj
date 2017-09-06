@@ -19,22 +19,27 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="engine\WHCamera.h" />
-    <ClInclude Include="engine\WHLight.h" />
-    <ClInclude Include="engine\WHMaterial.h" />
-    <ClInclude Include="engine\WHRay.h" />
-    <ClInclude Include="logger\WHLogger.h" />
-    <ClInclude Include="math\WHMatrix.h" />
-    <ClInclude Include="math\WHVector.h" />
-    <ClInclude Include="render\WHAbstractBuffer.h" />
-    <ClInclude Include="render\WHAbstractMemoryStrategy.h" />
-    <ClInclude Include="render\WHBuffer.h" />
-    <ClInclude Include="render\WHMemoryChunk.h" />
-    <ClInclude Include="render\WHMemoryManager.h" />
-    <ClInclude Include="render\WHColor.h" />
-    <ClInclude Include="render\WHStream.h" />
-    <ClInclude Include="render\WHStreamManager.h" />
-    <ClInclude Include="render\WHWindow.h" />
+    <ClInclude Include="engine\WHEngine.h" />
+    <ClInclude Include="engine\render\WHCamera.h" />
+    <ClInclude Include="engine\render\WHGraphicObject.h" />
+    <ClInclude Include="engine\WHKernel.cuh" />
+    <ClInclude Include="engine\render\WHLight.h" />
+    <ClInclude Include="engine\render\WHMaterial.h" />
+    <ClInclude Include="engine\render\WHRay.h" />
+    <ClInclude Include="engine\WHAbstractScene.h" />
+    <ClInclude Include="engine\memory\WHEvent.h" />
+    <ClInclude Include="engine\logger\WHLogger.h" />
+    <ClInclude Include="engine\render\math\WHMatrix.h" />
+    <ClInclude Include="engine\render\math\WHQuaternion.h" />
+    <ClInclude Include="engine\render\math\WHVector.h" />
+    <ClInclude Include="engine\memory\WHAbstractBuffer.h" />
+    <ClInclude Include="engine\WHAbstractMemoryStrategy.h" />
+    <ClInclude Include="engine\memory\WHMemoryChunk.h" />
+    <ClInclude Include="engine\memory\WHMemoryManager.h" />
+    <ClInclude Include="engine\render\WHColor.h" />
+    <ClInclude Include="engine\memory\WHStream.h" />
+    <ClInclude Include="engine\memory\WHStreamManager.h" />
+    <ClInclude Include="engine\render\WHWindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -98,6 +103,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>C:\Program Files\Boost\boost_1_65_0;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <ctype.h>
-
 #include "WHStream.h"
 
 namespace whirl {

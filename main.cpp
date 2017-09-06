@@ -5,10 +5,8 @@
 
 #include "stdio.h"
 
-#include "render/WHMemoryManager.h"
-
-#include "render/WHBuffer.h"
-#include "render/WHWindow.h"
+#include "engine/WHEngine.h"
+#include "engine/render/WHWindow.h"
 
 using namespace whirl;
 
@@ -16,8 +14,9 @@ int main()
 {
     WHWindow wnd({ 256, 256 });
 
-    WHBuffer<WHMemoryLocation::CPU> wnd_buffer = wnd.create_buffer();
-    WHBuffer<WHMemoryLocation::GPU> gpu_buffer = wnd_buffer;
+    WHEngine<WHScene<WHVolume<WHGraphicObject<>, WHGraphicObject<>>, WHLightStrategy>, WHSimpleMemoryStrategy> engine;
+
+    WHBuffer wnd_buffer = wnd.create_buffer();
     
     auto buf_size = wnd_buffer.get_pixel_size();
     

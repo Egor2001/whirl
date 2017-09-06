@@ -1,13 +1,6 @@
 #pragma once
 
-#include <memory>
-#include <vector>
-
-#include "cuda.h"
-#include "cuda_runtime.h"
-
 #include "../logger/WHLogger.h"
-#include "WHColor.h"
 #include "WHMemoryChunk.h"
 
 namespace whirl {
@@ -19,7 +12,7 @@ public:
     typedef struct { uint32_t cx, cy; } Size_;
 
     WHBuffer() = default;
-    
+    //TODO: memset
     WHBuffer(const std::shared_ptr<WHAbstractMemoryManager>& mem_manager_set, 
              const std::shared_ptr<WHChunkBuffer>&           chunk_buffer_set, unsigned int alloc_flags): 
         mem_manager_(mem_manager_set), chunk_buffer_(chunk_buffer_set), alloc_chunks_vec_(std::vector<Byte_*>(chunk_buffer_->get_chunks_num()))
@@ -28,7 +21,7 @@ public:
 
         auto allocate_func = [&, this, alloc_flags](size_t chunk_index, size_t height_shift, size_t height_size, cudaStream_t stream)
         {
-            alloc_chunks_vec_[chunk_index] = static_cast<Byte_*>(mem_manager_->allocate(alloc_size.cx * height_size, alloc_flags));
+            alloc_chunks_vec_[chunk_index] = static_cast<Byte_*>(mem_manager_->allocate(alloc_size.cx * height_size * sizeof(Byte_), alloc_flags));
         };
 
         chunk_buffer_->iterate(allocate_func);

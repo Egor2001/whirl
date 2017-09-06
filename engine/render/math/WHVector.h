@@ -19,12 +19,14 @@ __host__ __device__ WHNormal3 whMakeNormal3(float x_set, float y_set, float z_se
     return normalized(whMakeVector3(x_set, y_set, z_set));
 }
 
+__host__ __device__ bool      is_inside  (const WHVector3&, const WHVector3&);
 __host__ __device__ WHVector3 operator - (const WHVector3&);
 __host__ __device__ float     len        (const WHVector3&);
 __host__ __device__ float     len2       (const WHVector3&);
 __host__ __device__ WHVector3 normalized (const WHVector3&);
+__host__ __device__ WHVector3 reflected  (const WHVector3&, const WHNormal3&);
 __host__ __device__ float     dot        (const WHVector3&, const WHVector3&);
-__host__ __device__ WHVector3 mul        (const WHVector3&, const WHVector3&);
+__host__ __device__ WHVector3 operator * (const WHVector3&, const WHVector3&);
 
 __host__ __device__ WHVector3 operator + (const WHVector3&, const WHVector3&);
 __host__ __device__ WHVector3 operator - (const WHVector3&, const WHVector3&);
@@ -34,6 +36,11 @@ __host__ __device__ WHVector3& operator += (WHVector3&, const WHVector3&);
 __host__ __device__ WHVector3& operator -= (WHVector3&, const WHVector3&);
 __host__ __device__ WHVector3& operator *= (WHVector3&, float);
 __host__ __device__ void       normalize   (WHVector3&);
+
+__host__ __device__ bool is_inside(const WHVector3& vec, const WHVector3& bounds)
+{
+    return vec.x < bounds.x && vec.y < bounds.y && vec.z < bounds.z;
+}
 
 __host__ __device__ WHVector3 operator - (const WHVector3& vec)
 {
@@ -55,12 +62,17 @@ __host__ __device__ WHVector3 normalized(const WHVector3& vec)//TODO: check if l
     return vec*(1.0f/len(vec));
 }
 
+__host__ __device__ WHVector3 reflected(const WHVector3& vector, const WHNormal3& normal)
+{
+    return normal*dot(vector, normal) - vector;
+}
+
 __host__ __device__ float dot(const WHVector3& lhs_vec, const WHVector3& rhs_vec)
 {
     return lhs_vec.x*rhs_vec.x + lhs_vec.y*rhs_vec.y + lhs_vec.z*rhs_vec.z; 
 }
 
-__host__ __device__ WHVector3 mul(const WHVector3& lhs_vec, const WHVector3& rhs_vec)
+__host__ __device__ WHVector3 operator * (const WHVector3& lhs_vec, const WHVector3& rhs_vec)
 {
     return make_float3( lhs_vec.y*rhs_vec.z - lhs_vec.z*rhs_vec.y,
                        -lhs_vec.x*rhs_vec.z + lhs_vec.z*rhs_vec.x,
